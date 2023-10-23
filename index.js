@@ -63,7 +63,19 @@ async function run() {
         };
         const result = await userCollection.updateOne(filter, updateDoc);
         res.send(result);
-    
+      const requesterAccount = await userCollection.findOne({ email: requester });
+      if (requesterAccount.role === 'admin') {
+        const filter = { email: email };
+        const updateDoc = {
+          $set: { role: 'admin' },
+        };
+        const result = await userCollection.updateOne(filter, updateDoc);
+        res.send(result);
+      }
+
+      else{
+        res.status(403).send({message: 'forbidden'});
+      }
 
     })
 
