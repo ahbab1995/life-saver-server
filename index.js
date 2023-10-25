@@ -42,9 +42,20 @@ async function run() {
     await client.connect();
     
     const productCollection = client.db("life-saver").collection("products");
+    const addproductsCollection = client.db("life-saver").collection("addproducts");
     const userCollection = client.db("life-saver").collection("users");
 
     
+    const verifyAdmin = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterAccount = await userCollection.findOne({ email: requester });
+      if (requesterAccount.role === 'admin') {
+        next();
+      }
+      else {
+        res.status(403).send({ message: 'forbidden' });
+      }
+    }
    
 
     app.get('/admin/:email', async(req, res) =>{
@@ -54,28 +65,14 @@ async function run() {
       res.send({admin: isAdmin})
     })
 
-    app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+    app.put('/user/admin/:email', verifyJWT,verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
-      
-        const updateDoc = {
-          $set: { role: 'admin' },
-        };
-        const result = await userCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      const requesterAccount = await userCollection.findOne({ email: requester });
-      if (requesterAccount.role === 'admin') {
-        const filter = { email: email };
-        const updateDoc = {
-          $set: { role: 'admin' },
-        };
-        const result = await userCollection.updateOne(filter, updateDoc);
-        res.send(result);
-      }
-
-      else{
-        res.status(403).send({message: 'forbidden'});
-      }
+      const updateDoc = {
+        $set: { role: 'admin' },
+      };
+      const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
 
     })
 
@@ -100,9 +97,15 @@ async function run() {
       
       app.get("/product", async (req, res) => {
         const query = {};
-        const cursor = productCollection.find(query);
+        const cursor = productCollection.find(query).project({name:1});
         const products = await cursor.toArray();
         res.send(products);
+      });
+    
+      app.post('/addproduct', verifyJWT, verifyAdmin, async (req, res) => {
+        const doctor = req.body;
+        const result = await addproductsCollection.insertOne(product);
+        res.send(result);
       });
   } finally {
     // Ensures that the client will close when you finish/error
@@ -118,3 +121,4 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
