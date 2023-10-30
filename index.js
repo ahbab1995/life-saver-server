@@ -94,6 +94,13 @@ async function run() {
       const users = await userCollection.find().toArray();
       res.send(users);
     });
+
+    app.delete('/user/:email', verifyJWT, verifyAdmin, async (req, res) => {
+      const email = req.params.email;
+      const filter = {email: email};
+      const result = await userCollection.deleteOne(filter);
+      res.send(result);
+    })
       
       app.get("/product", async (req, res) => {
         const query = {};
@@ -103,7 +110,7 @@ async function run() {
       });
     
       app.post('/addproduct', verifyJWT, verifyAdmin, async (req, res) => {
-        const doctor = req.body;
+        const product = req.body;
         const result = await addproductsCollection.insertOne(product);
         res.send(result);
       });
@@ -122,3 +129,4 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 
+// video : 76-4 Save Doctor info in the database and display success message
