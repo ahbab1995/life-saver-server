@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -114,6 +114,20 @@ async function run() {
         const result = await addproductsCollection.insertOne(product);
         res.send(result);
       });
+    
+      app.get('/addproduct',  async(req, res) =>{
+        const product = await addproductsCollection.find().toArray();
+        res.send(product);
+      })
+    
+      app.delete('/addproduct/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        const id = req.params;
+        const filter =  { _id: new ObjectId(id) };
+        const result = await addproductsCollection.deleteOne(filter);
+        res.send(result);
+      })
+    
+    
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -129,4 +143,3 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 
-// video : 76-4 Save Doctor info in the database and display success message
