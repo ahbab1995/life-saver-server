@@ -3,7 +3,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -49,30 +49,33 @@ async function run() {
 
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
-      console.log("decodedEmail", decodedEmail);
+
       const query = { email: decodedEmail };
       const requesterAccount = await userCollection.findOne(query);
-      //  console.log('requesterAccount',requesterAccount)
+
       if (requesterAccount?.role === "admin") {
         return res.status(403).send({ message: "forbidden access" });
       }
       next();
     };
 
+    app.post("/create-payment-intent", async (req, res) => {
+      const product = req.body;
+      const price = product.price;
 
-    app.post('/create-payment-intent', verifyJWT, async(req, res) =>{
-      const service = req.body;
-      const price = service.price;
-      const amount = price*100;
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount : amount,
-        currency: 'usd',
-        payment_method_types:['card']
-      });
-      res.send({clientSecret: paymentIntent.client_secret})
+      const amount = price * 100;
+
+      // if (isNaN(amount)) {
+      //   console.error("Invalid integer");
+      // }
+      // const paymentIntent = await stripe.paymentIntents.create({
+      //   amount: amount,
+      //   currency: "usd",
+      //   payment_method_types: ["card"],
+      // });
+      // res.send({ clientSecret: paymentIntent.client_secret });
     });
 
-    
     app.put("/user/admin/:email", verifyJWT, verifyAdmin, async (req, res) => {
       const email = req.params.email;
       const filter = { email: email };
@@ -95,7 +98,7 @@ async function run() {
       const token = jwt.sign(
         { email: email },
         process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: "10h" }
+        { expiresIn: "24h" }
       );
       res.send({ result, token });
     });
